@@ -1,0 +1,17 @@
+{
+  "name": "tkcam-blockchain",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "bien-dich": "hardhat compile",
+    "kiem-thu": "hardhat test",
+    "chay-mang": "hardhat node",
+    "trien-khai-local": "hardhat run scripts/trienKhai.js --network localhost",
+    "trien-khai-sepolia": "hardhat run scripts/trienKhai.js --network sepolia"
+  },
+  "devDependencies": {
+    "@nomicfoundation/hardhat-toolbox": "^5.0.0",
+    "dotenv": "^16.4.5",
+    "hardhat": "^2.28.0"
+  }
+}

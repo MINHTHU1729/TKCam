@@ -1,0 +1,127 @@
+[
+  {
+    "id": 1,
+    "ten": "Canon IXUS 285 HS",
+    "hang": "Canon",
+    "seri": "CN-IX285-0001",
+    "giaNgay": 0.0001,
+    "coc": 0.001,
+    "trangThai": "san-sang",
+    "mau": "#c9c3b8",
+    "moTa": "Nhỏ gọn bỏ túi, zoom quang 12x, màu ảnh trong trẻo, hợp đi chơi và du lịch.",
+    "thongSo": {
+      "Cảm biến": "20.2MP CMOS",
+      "Zoom": "12x quang học",
+      "Màn hình": "3 inch",
+      "Pin": "~250 ảnh"
+    },
+    "phuHop": [
+      "Du lịch",
+      "Người mới"
+    ]
+  },
+  {
+    "id": 2,
+    "ten": "Sony Cyber-shot DSC-W830",
+    "hang": "Sony",
+    "seri": "SN-W830-0002",
+    "giaNgay": 8e-05,
+    "coc": 0.0008,
+    "trangThai": "san-sang",
+    "mau": "#2b2b2e",
+    "moTa": "Digicam huyền thoại của giới trẻ, ảnh có chất film nhẹ, dễ dùng.",
+    "thongSo": {
+      "Cảm biến": "20.1MP CCD",
+      "Zoom": "8x quang học",
+      "Màn hình": "2.7 inch",
+      "Pin": "~210 ảnh"
+    },
+    "phuHop": [
+      "Du lịch",
+      "Người mới"
+    ]
+  },
+  {
+    "id": 3,
+    "ten": "Canon PowerShot G7 X Mark II",
+    "hang": "Canon",
+    "seri": "CN-G7X2-0003",
+    "giaNgay": 0.0003,
+    "coc": 0.003,
+    "trangThai": "san-sang",
+    "mau": "#1f1f22",
+    "moTa": "Cảm biến 1 inch, quay vlog đẹp, chụp thiếu sáng tốt. Lựa chọn của các vlogger.",
+    "thongSo": {
+      "Cảm biến": "20.1MP 1 inch",
+      "Zoom": "4.2x quang học",
+      "Màn hình": "3 inch lật",
+      "Pin": "~265 ảnh"
+    },
+    "phuHop": [
+      "Vlog",
+      "Chuyên nghiệp"
+    ]
+  },
+  {
+    "id": 4,
+    "ten": "Fujifilm FinePix XP140",
+    "hang": "Fujifilm",
+    "seri": "FJ-XP140-0004",
+    "giaNgay": 0.00012,
+    "coc": 0.0012,
+    "trangThai": "san-sang",
+    "mau": "#3b8fc4",
+    "moTa": "Chống nước 25m, chống sốc, hợp đi biển và hoạt động ngoài trời.",
+    "thongSo": {
+      "Cảm biến": "16.4MP CMOS",
+      "Zoom": "5x quang học",
+      "Chống nước": "25m",
+      "Pin": "~240 ảnh"
+    },
+    "phuHop": [
+      "Đi biển",
+      "Du lịch"
+    ]
+  },
+  {
+    "id": 5,
+    "ten": "Ricoh GR III",
+    "hang": "Ricoh",
+    "seri": "RC-GR3-0005",
+    "giaNgay": 0.0004,
+    "coc": 0.004,
+    "trangThai": "bao-tri",
+    "mau": "#4a4a4d",
+    "moTa": "Cảm biến APS-C trong thân máy bỏ túi, ống kính 28mm sắc nét cho chụp đường phố.",
+    "thongSo": {
+      "Cảm biến": "24MP APS-C",
+      "Ống kính": "28mm f/2.8",
+      "Màn hình": "3 inch cảm ứng",
+      "Pin": "~200 ảnh"
+    },
+    "phuHop": [
+      "Đường phố",
+      "Chuyên nghiệp"
+    ]
+  },
+  {
+    "id": 6,
+    "ten": "Nikon Coolpix A10",
+    "hang": "Nikon",
+    "seri": "NK-A10-0006",
+    "giaNgay": 7e-05,
+    "coc": 0.0007,
+    "trangThai": "san-sang",
+    "mau": "#b8323a",
+    "moTa": "Dùng pin AA tiện lợi, giá thuê rẻ, phù hợp người mới chụp.",
+    "thongSo": {
+      "Cảm biến": "16.1MP CCD",
+      "Zoom": "5x quang học",
+      "Màn hình": "2.7 inch",
+      "Pin": "2 pin AA"
+    },
+    "phuHop": [
+      "Người mới"
+    ]
+  }
+]
