@@ -46,5 +46,3 @@ npx hardhat run scripts/trienKhai.js --network sepolia   # cần SEPOLIA_RPC_URL
 Script deploy hợp đồng, ký sẵn báo giá cho 6 máy mẫu (`api/bao-gia-mau.json`, không tốn gas) và tự ghi địa chỉ
 hợp đồng vào `frontend/.env`, `frontend/src/hopdong/TKCam.json`, `api/cauhinh.php`. Deploy xong chép lại thư mục `api` vào htdocs.
 
-## Lưu ý bảo mật
-Không đưa file `.env` lên GitHub (đã chặn bằng `.gitignore`). `blockchain/.env` chứa khóa riêng ví.
