@@ -8,7 +8,7 @@ export default function TheMayAnh({ may, soNgay }) {
   return (
     <Link to={`/may-anh/${may.id}${soNgay ? `?ngay=${soNgay}` : ""}`} className="the-may">
       <div className="the-may__anh">
-        <HinhMayAnh mau={may.mau} />
+        <HinhMayAnh mau={may.mau} anh={may.anh} ten={may.ten} />
         <span className={`trang-thai ${tt.lop} the-may__nhan`}>{tt.ten}</span>
       </div>
       <div className="the-may__than">

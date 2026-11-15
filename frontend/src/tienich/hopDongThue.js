@@ -1,9 +1,10 @@
-// Các hàm gọi smart contract TKCam cho phần NGƯỜI THUÊ
-import { formatEther, ZeroAddress } from "ethers";
+// Các hàm gọi smart contract TKCam cho phần NGƯỜI THUÊ (phần tiền: thuê, hủy).
+// Giá và tiền cọc lấy từ BÁO GIÁ ĐÃ KÝ của chủ cửa hàng (lưu trong CSDL); hợp đồng kiểm tra chữ ký.
+// Sau mỗi giao dịch, web gửi mã hash về API (ghiNhanGiaoDich) để lưu vào CSDL.
+import { ZeroAddress } from "ethers";
 import { hopDongDoc, hopDongGhi } from "./ketnoivi";
 import { DIA_CHI_HOP_DONG } from "./cauhinh";
 
-export const TRANG_THAI_MAY = ["san-sang", "dang-thue", "bao-tri"]; // theo enum trên hợp đồng
 export const TRANG_THAI_DON = [
   { ten: "Đang thuê", lop: "vang" },
   { ten: "Đã trả", lop: "xanh" },
@@ -24,6 +25,8 @@ export function loiTiengViet(e) {
     "So tien gui khong dung": "Số tiền gửi không đúng, hãy tải lại trang.",
     "Qua thoi gian huy (1 gio)": "Đã quá 1 giờ kể từ lúc thuê nên không hủy được.",
     "Khong co may": "Máy này hiện chưa nhận đặt thuê.",
+    "Bao gia het han": "Báo giá của máy đã hết hạn, cửa hàng cần cập nhật lại giá.",
+    "Bao gia khong hop le": "Báo giá không hợp lệ, vui lòng tải lại trang.",
   };
   const khop = Object.keys(BANG).find((k) => lyDo.includes(k));
   if (khop) return BANG[khop];
@@ -37,49 +40,19 @@ export function loiTiengViet(e) {
   return "Giao dịch chưa thực hiện được. Vui lòng thử lại.";
 }
 
-// Đọc trạng thái + giá thật của máy trên hợp đồng
-export async function layMayTrenChuoi(maMay) {
-  const m = await hopDongDoc().getCamera(maMay);
-  return {
-    trangThai: TRANG_THAI_MAY[Number(m.status)],
-    giaNgay: Number(formatEther(m.pricePerDay)),
-    coc: Number(formatEther(m.deposit)),
-    giaNgayWei: m.pricePerDay,
-    cocWei: m.deposit,
-  };
+// Máy đang có đơn thuê trên hợp đồng không (đọc miễn phí): trả về mã đơn, 0 = rảnh
+export async function layDonHienTai(maMay) {
+  return Number(await hopDongDoc().donHienTai(maMay));
 }
 
-// Lịch sử thuê của một máy, đọc từ hợp đồng (mới nhất trước)
-export async function layLichSuMay(maMay) {
-  const hopDong = hopDongDoc();
-  const danhSachMa = await hopDong.getRentalsOfCamera(maMay);
-  const ngay = (giay) => new Date(Number(giay) * 1000).toLocaleDateString("vi-VN");
-  const lichSu = await Promise.all(
-    danhSachMa.map(async (ma) => {
-      const d = await hopDong.getRental(ma);
-      const tt = Number(d.trangThai);
-      let ketQua = TRANG_THAI_DON[tt].ten;
-      if (tt === 1) {
-        ketQua = Number(d.phiTre) > 0 || Number(d.tienHuHong) > 0 ? "Trả máy, có khấu trừ cọc" : "Trả đúng hạn, hoàn cọc đủ";
-      }
-      return {
-        maDon: Number(ma),
-        nguoiThue: `${d.nguoiThue.slice(0, 6)}...${d.nguoiThue.slice(-4)}`,
-        ngayThue: ngay(d.batDau),
-        ngayTra: Number(d.ngayTra) ? ngay(d.ngayTra) : "—",
-        ketQua,
-      };
-    })
-  );
-  return lichSu.sort((a, b) => b.maDon - a.maDon);
-}
-
-// Thuê máy: tính tiền từ giá trên hợp đồng (không dùng số trong JSON để tránh lệch)
-export async function thueMay(maMay, soNgay) {
+// Thuê máy theo báo giá đã ký: gửi đúng (giá × số ngày + cọc) vào hợp đồng
+export async function thueMay(may, soNgay) {
+  if (!may.chuKy) throw new Error("Máy này hiện chưa nhận đặt thuê.");
   const hopDong = await hopDongGhi();
-  const may = await hopDong.getCamera(maMay);
-  const tong = may.pricePerDay * BigInt(soNgay) + may.deposit;
-  const giaoDich = await hopDong.rent(maMay, soNgay, { value: tong });
+  const giaNgay = BigInt(may.giaNgayWei);
+  const tienCoc = BigInt(may.tienCocWei);
+  const tong = giaNgay * BigInt(soNgay) + tienCoc;
+  const giaoDich = await hopDong.rent(may.id, may.seri, giaNgay, tienCoc, may.hetHan, soNgay, may.chuKy, { value: tong });
   const bienNhan = await giaoDich.wait(); // chờ giao dịch được xác nhận
 
   // Lấy mã đơn từ sự kiện Rented
@@ -89,37 +62,10 @@ export async function thueMay(maMay, soNgay) {
   return { maDon: suKien ? Number(suKien.args.rentalId) : null, maGiaoDich: giaoDich.hash };
 }
 
-// Hủy đơn (trong 1 giờ đầu)
+// Hủy đơn (trong 1 giờ đầu), trả về mã hash giao dịch
 export async function huyDon(maDon) {
   const hopDong = await hopDongGhi();
-  await (await hopDong.cancelRental(maDon)).wait();
-}
-
-// Danh sách đơn thuê của một ví, mới nhất trước
-export async function layDonCuaVi(diaChi) {
-  const hopDong = hopDongDoc();
-  const danhSachMa = await hopDong.getRentalsOf(diaChi);
-  const don = await Promise.all(
-    danhSachMa.map(async (ma) => {
-      const d = await hopDong.getRental(ma);
-      const may = await hopDong.getCamera(d.maMay);
-      return {
-        maDon: Number(ma),
-        maMay: Number(d.maMay),
-        tenMay: may.name,
-        seri: may.serial,
-        soNgay: Number(d.soNgay),
-        tienThue: formatEther(d.tienThue),
-        tienCoc: formatEther(d.tienCoc),
-        batDau: new Date(Number(d.batDau) * 1000),
-        hanTra: new Date(Number(d.hanTra) * 1000),
-        ngayTra: Number(d.ngayTra) ? new Date(Number(d.ngayTra) * 1000) : null,
-        phiTre: formatEther(d.phiTre),
-        tienHuHong: formatEther(d.tienHuHong),
-        tienHoan: formatEther(d.tienHoan),
-        trangThai: Number(d.trangThai),
-      };
-    })
-  );
-  return don.sort((a, b) => b.maDon - a.maDon);
+  const giaoDich = await hopDong.cancelRental(maDon);
+  await giaoDich.wait();
+  return giaoDich.hash;
 }

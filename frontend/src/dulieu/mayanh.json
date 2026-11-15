@@ -18,14 +18,15 @@
     "phuHop": [
       "Du lịch",
       "Người mới"
-    ]
+    ],
+    "anh": ""
   },
   {
     "id": 2,
     "ten": "Sony Cyber-shot DSC-W830",
     "hang": "Sony",
     "seri": "SN-W830-0002",
-    "giaNgay": 8e-05,
+    "giaNgay": 0.00008,
     "coc": 0.0008,
     "trangThai": "san-sang",
     "mau": "#2b2b2e",
@@ -39,7 +40,8 @@
     "phuHop": [
       "Du lịch",
       "Người mới"
-    ]
+    ],
+    "anh": ""
   },
   {
     "id": 3,
@@ -60,7 +62,8 @@
     "phuHop": [
       "Vlog",
       "Chuyên nghiệp"
-    ]
+    ],
+    "anh": ""
   },
   {
     "id": 4,
@@ -81,7 +84,8 @@
     "phuHop": [
       "Đi biển",
       "Du lịch"
-    ]
+    ],
+    "anh": ""
   },
   {
     "id": 5,
@@ -102,14 +106,15 @@
     "phuHop": [
       "Đường phố",
       "Chuyên nghiệp"
-    ]
+    ],
+    "anh": ""
   },
   {
     "id": 6,
     "ten": "Nikon Coolpix A10",
     "hang": "Nikon",
     "seri": "NK-A10-0006",
-    "giaNgay": 7e-05,
+    "giaNgay": 0.00007,
     "coc": 0.0007,
     "trangThai": "san-sang",
     "mau": "#b8323a",
@@ -122,6 +127,7 @@
     },
     "phuHop": [
       "Người mới"
-    ]
+    ],
+    "anh": ""
   }
 ]

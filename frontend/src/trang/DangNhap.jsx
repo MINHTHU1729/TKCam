@@ -5,7 +5,7 @@ import OMatKhau from "../thanhphan/OMatKhau";
 import { useTaiKhoan } from "../xuly/TaiKhoan";
 
 export default function DangNhap() {
-  const { dangNhap, daDangNhap } = useTaiKhoan();
+  const { dangNhap, daDangNhap, laAdmin } = useTaiKhoan();
   const [thamSo] = useSearchParams();
   const dieuHuong = useNavigate();
   const tiep = thamSo.get("tiep") || "/tai-khoan";
@@ -14,7 +14,8 @@ export default function DangNhap() {
   const [loi, setLoi] = useState("");
   const [dangGui, setDangGui] = useState(false);
 
-  if (daDangNhap) return <Navigate to={tiep} replace />;
+  // Đã đăng nhập: quản trị vào trang quản trị, khách quay lại trang đang xem
+  if (daDangNhap) return <Navigate to={laAdmin ? "/admin" : tiep} replace />;
 
   const doi = (e) => setForm({ ...form, [e.target.name]: e.target.value });
 
@@ -23,8 +24,8 @@ export default function DangNhap() {
     setLoi("");
     setDangGui(true);
     try {
-      await dangNhap(form);
-      dieuHuong(tiep, { replace: true });
+      const nd = await dangNhap(form);
+      dieuHuong(nd.vaiTro === "admin" ? "/admin" : tiep, { replace: true });
     } catch (err) {
       setLoi(err.message);
     } finally {
@@ -47,7 +48,7 @@ export default function DangNhap() {
             placeholder="ban@email.com" value={form.email} onChange={doi} />
         </label>
         <label className="nhan-o">
-          <span className="nhan-o__hang">Mật khẩu <a href="#" className="lien-ket nho" onClick={(e) => e.preventDefault()}>Quên mật khẩu?</a></span>
+          <span className="nhan-o__hang">Mật khẩu <Link to="/quen-mat-khau" className="lien-ket nho">Quên mật khẩu?</Link></span>
           <OMatKhau name="matKhau" autoComplete="current-password" required placeholder="Nhập mật khẩu"
             value={form.matKhau} onChange={doi} />
         </label>

@@ -213,7 +213,7 @@ export default function TrangChu() {
                 <tr key={m.id}>
                   <td>
                     <div className="bang-gia__may">
-                      <span className="bang-gia__hinh"><HinhMayAnh mau={m.mau} nen={false} /></span>
+                      <span className="bang-gia__hinh"><HinhMayAnh mau={m.mau} anh={m.anh} ten={m.ten} nen={false} /></span>
                       <div><b>{m.ten}</b><small>{m.hang}</small></div>
                     </div>
                   </td>

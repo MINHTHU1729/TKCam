@@ -11,3 +11,6 @@ export const TEN_MANG = env.VITE_CHAIN_NAME || "Sepolia";
 export const RPC_DOC = env.VITE_RPC_URL || "https://ethereum-sepolia-rpc.publicnode.com";
 
 export const ABI_HOP_DONG = HopDongTKCam.abi;
+
+// Link xem giao dịch trên Etherscan (chỉ có với mạng Sepolia)
+export const linkGiaoDich = (hash) => (hash && MA_MANG === 11155111 ? `https://sepolia.etherscan.io/tx/${hash}` : null);

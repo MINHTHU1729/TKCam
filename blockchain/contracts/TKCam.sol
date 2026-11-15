@@ -2,49 +2,37 @@
 pragma solidity ^0.8.24;
 
 /// @title TKCam - Cho thuê máy ảnh compact, đặt cọc và hoàn cọc tự động
+/// @notice Danh sách máy, giá, bảo trì lưu trong CSDL (không tốn gas).
+///         Chủ cửa hàng KÝ báo giá từng máy bằng MetaMask (ký miễn phí, không phải giao dịch).
+///         Khi thuê, khách gửi báo giá đã ký lên hợp đồng; hợp đồng kiểm tra chữ ký của chủ
+///         nên khách không sửa được giá / tiền cọc. Chỉ thuê, hủy, trả máy là giao dịch tốn gas.
 contract TKCam {
-    // ===== Kiểu dữ liệu =====
-    enum TrangThaiMay { SanSang, DangThue, BaoTri }
     enum TrangThaiDon { DangThue, DaTra, DaHuy }
 
-    struct MayAnh {
-        string seri;          // số seri máy
-        string ten;           // tên máy
-        uint256 giaNgay;      // giá thuê 1 ngày (wei)
-        uint256 tienCoc;      // tiền cọc (wei)
-        TrangThaiMay trangThai;
-        bool tonTai;
-    }
-
     struct DonThue {
-        uint256 maMay;
+        uint256 maMay;        // mã máy trong CSDL
         address nguoiThue;
         uint256 soNgay;
+        uint256 giaNgay;      // giá 1 ngày lúc thuê (wei) – dùng tính phí trễ
         uint256 tienThue;     // wei
         uint256 tienCoc;      // wei
         uint256 batDau;       // thời điểm thuê (giây)
         uint256 hanTra;       // hạn trả (giây)
-        uint256 ngayTra;      // thời điểm trả thực tế
+        uint256 ngayTra;      // thời điểm trả / hủy thực tế
         uint256 phiTre;       // wei
         uint256 tienHuHong;   // wei
-        uint256 tienHoan;     // tiền cọc hoàn lại (wei)
+        uint256 tienHoan;     // tiền hoàn lại cho khách (wei)
         TrangThaiDon trangThai;
+        bytes32 bamSeri;      // keccak256(số seri) để kiểm tra khi trả máy
     }
 
-    // ===== Dữ liệu lưu trên chuỗi =====
-    address public owner;                                  // chủ cửa hàng (admin)
-    uint256 public cameraCount;                            // số máy đã đăng
-    uint256 public rentalCount;                            // số đơn thuê
-    mapping(uint256 => MayAnh) private mayAnh;             // mã máy => máy
-    mapping(bytes32 => uint256) private maTheoSeri;        // hash(seri) => mã máy
-    mapping(uint256 => DonThue) private donThue;           // mã đơn => đơn
-    mapping(address => uint256[]) private donCuaNguoi;     // ví => danh sách mã đơn
-    mapping(uint256 => uint256[]) private donCuaMay;       // mã máy => danh sách mã đơn
-    mapping(uint256 => uint256) public donHienTai;         // mã máy => đơn đang thuê
+    address public owner;
+    uint256 public rentalCount;
+    mapping(uint256 => DonThue) private donThue;
+    mapping(uint256 => uint256) public donHienTai;          // mã máy => mã đơn đang thuê (0 = rảnh)
+    mapping(address => uint256[]) private donCuaNguoi;
+    mapping(uint256 => uint256[]) private donCuaMay;
 
-    // ===== Sự kiện (frontend lắng nghe) =====
-    event CameraListed(uint256 indexed id, string serial, uint256 pricePerDay, uint256 deposit);
-    event CameraStatusChanged(uint256 indexed id, uint8 status);
     event Rented(uint256 indexed rentalId, uint256 indexed cameraId, address indexed renter, uint256 days_, uint256 total);
     event Returned(uint256 indexed rentalId, uint256 refund, uint256 lateFee, uint256 damage);
     event Cancelled(uint256 indexed rentalId, uint256 refund);
@@ -58,107 +46,61 @@ contract TKCam {
         owner = msg.sender;
     }
 
-    // ===================== ADMIN =====================
+    // ===================== BÁO GIÁ CÓ CHỮ KÝ =====================
 
-    /// Đăng máy ảnh mới. Số seri không được trùng.
-    function listCamera(string calldata serial, string calldata name, uint256 pricePerDay, uint256 deposit)
-        external chiChuCuaHang returns (uint256 id)
+    /// Mã băm của 1 báo giá. Chủ cửa hàng ký mã này bằng MetaMask (signMessage).
+    function bamBaoGia(uint256 maMay, string memory seri, uint256 giaNgay, uint256 tienCoc, uint256 hetHan)
+        public view returns (bytes32)
     {
-        require(bytes(serial).length > 0, "Seri trong");
-        require(pricePerDay > 0 && deposit > 0, "Gia va coc phai lon hon 0");
-        bytes32 h = keccak256(bytes(serial));
-        require(maTheoSeri[h] == 0, "Seri da ton tai");
-
-        id = ++cameraCount;
-        mayAnh[id] = MayAnh(serial, name, pricePerDay, deposit, TrangThaiMay.SanSang, true);
-        maTheoSeri[h] = id;
-        emit CameraListed(id, serial, pricePerDay, deposit);
+        return keccak256(abi.encode(address(this), block.chainid, maMay, keccak256(bytes(seri)), giaNgay, tienCoc, hetHan));
     }
 
-    /// Đổi giá thuê / tiền cọc (chỉ khi máy không đang cho thuê)
-    function updatePrice(uint256 id, uint256 pricePerDay, uint256 deposit) external chiChuCuaHang {
-        MayAnh storage m = mayAnh[id];
-        require(m.tonTai, "Khong co may");
-        require(m.trangThai != TrangThaiMay.DangThue, "May dang cho thue");
-        require(pricePerDay > 0 && deposit > 0, "Gia va coc phai lon hon 0");
-        m.giaNgay = pricePerDay;
-        m.tienCoc = deposit;
-    }
-
-    /// Bật / tắt bảo trì
-    function setMaintenance(uint256 id, bool on) external chiChuCuaHang {
-        MayAnh storage m = mayAnh[id];
-        require(m.tonTai, "Khong co may");
-        require(m.trangThai != TrangThaiMay.DangThue, "May dang cho thue");
-        m.trangThai = on ? TrangThaiMay.BaoTri : TrangThaiMay.SanSang;
-        emit CameraStatusChanged(id, uint8(m.trangThai));
-    }
-
-    /// Xác nhận trả máy: kiểm tra seri, tự tính phí trễ, trừ hư hỏng, hoàn cọc
-    function confirmReturn(uint256 rentalId, string calldata serial, uint256 damageAmount) external chiChuCuaHang {
-        DonThue storage d = donThue[rentalId];
-        require(d.nguoiThue != address(0), "Khong co don");
-        require(d.trangThai == TrangThaiDon.DangThue, "Don khong o trang thai dang thue");
-        MayAnh storage m = mayAnh[d.maMay];
-        require(keccak256(bytes(serial)) == keccak256(bytes(m.seri)), "Seri khong khop, sai may");
-
-        // Phí trễ: mỗi ngày trễ (làm tròn lên) = 1 ngày giá thuê, tối đa bằng tiền cọc
-        uint256 phiTre = 0;
-        if (block.timestamp > d.hanTra) {
-            uint256 soNgayTre = (block.timestamp - d.hanTra + 1 days - 1) / 1 days;
-            phiTre = soNgayTre * m.giaNgay;
-            if (phiTre > d.tienCoc) phiTre = d.tienCoc;
-        }
-        uint256 conLai = d.tienCoc - phiTre;
-        uint256 huHong = damageAmount > conLai ? conLai : damageAmount;
-        uint256 hoan = conLai - huHong;
-
-        // Cập nhật trạng thái trước khi chuyển tiền (chống reentrancy)
-        d.trangThai = TrangThaiDon.DaTra;
-        d.ngayTra = block.timestamp;
-        d.phiTre = phiTre;
-        d.tienHuHong = huHong;
-        d.tienHoan = hoan;
-        m.trangThai = TrangThaiMay.SanSang;
-        donHienTai[d.maMay] = 0;
-
-        _chuyen(owner, d.tienThue + phiTre + huHong);
-        _chuyen(d.nguoiThue, hoan);
-        emit Returned(rentalId, hoan, phiTre, huHong);
+    /// Kiểm tra báo giá có đúng chữ ký của chủ cửa hàng không
+    function kiemTraBaoGia(
+        uint256 maMay, string memory seri, uint256 giaNgay, uint256 tienCoc, uint256 hetHan, bytes memory chuKy
+    ) public view returns (bool) {
+        bytes32 bam = bamBaoGia(maMay, seri, giaNgay, tienCoc, hetHan);
+        bytes32 tinNhan = keccak256(abi.encodePacked("\x19Ethereum Signed Message:\n32", bam));
+        return _nguoiKy(tinNhan, chuKy) == owner;
     }
 
     // ===================== NGƯỜI THUÊ =====================
 
-    /// Thuê máy: gửi đúng (giá × số ngày + tiền cọc)
-    function rent(uint256 cameraId, uint256 days_) external payable returns (uint256 rentalId) {
-        MayAnh storage m = mayAnh[cameraId];
-        require(m.tonTai, "Khong co may");
-        require(m.trangThai == TrangThaiMay.SanSang, "May chua san sang");
-        require(days_ >= 1 && days_ <= 30, "So ngay tu 1 den 30");
-        uint256 tienThue = m.giaNgay * days_;
-        require(msg.value == tienThue + m.tienCoc, "So tien gui khong dung");
+    /// Thuê máy theo báo giá đã ký: gửi đúng (giá × số ngày + tiền cọc)
+    function rent(
+        uint256 maMay, string calldata seri, uint256 giaNgay, uint256 tienCoc, uint256 hetHan,
+        uint256 soNgay, bytes calldata chuKy
+    ) external payable returns (uint256 rentalId) {
+        require(block.timestamp <= hetHan, "Bao gia het han");
+        require(kiemTraBaoGia(maMay, seri, giaNgay, tienCoc, hetHan, chuKy), "Bao gia khong hop le");
+        require(giaNgay > 0 && tienCoc > 0, "Gia va coc phai lon hon 0");
+        require(donHienTai[maMay] == 0, "May chua san sang");
+        require(soNgay >= 1 && soNgay <= 30, "So ngay tu 1 den 30");
+        uint256 tienThue = giaNgay * soNgay;
+        require(msg.value == tienThue + tienCoc, "So tien gui khong dung");
 
         rentalId = ++rentalCount;
         donThue[rentalId] = DonThue({
-            maMay: cameraId,
+            maMay: maMay,
             nguoiThue: msg.sender,
-            soNgay: days_,
+            soNgay: soNgay,
+            giaNgay: giaNgay,
             tienThue: tienThue,
-            tienCoc: m.tienCoc,
+            tienCoc: tienCoc,
             batDau: block.timestamp,
-            hanTra: block.timestamp + days_ * 1 days,
+            hanTra: block.timestamp + soNgay * 1 days,
             ngayTra: 0,
             phiTre: 0,
             tienHuHong: 0,
             tienHoan: 0,
-            trangThai: TrangThaiDon.DangThue
+            trangThai: TrangThaiDon.DangThue,
+            bamSeri: keccak256(bytes(seri))
         });
-        m.trangThai = TrangThaiMay.DangThue;
-        donHienTai[cameraId] = rentalId;
+        donHienTai[maMay] = rentalId;
         donCuaNguoi[msg.sender].push(rentalId);
-        donCuaMay[cameraId].push(rentalId);
+        donCuaMay[maMay].push(rentalId);
 
-        emit Rented(rentalId, cameraId, msg.sender, days_, msg.value);
+        emit Rented(rentalId, maMay, msg.sender, soNgay, msg.value);
     }
 
     /// Hủy đơn trong vòng 1 giờ sau khi thuê: hoàn toàn bộ tiền
@@ -172,27 +114,46 @@ contract TKCam {
         d.trangThai = TrangThaiDon.DaHuy;
         d.ngayTra = block.timestamp;
         d.tienHoan = hoan;
-        mayAnh[d.maMay].trangThai = TrangThaiMay.SanSang;
         donHienTai[d.maMay] = 0;
 
         _chuyen(msg.sender, hoan);
         emit Cancelled(rentalId, hoan);
     }
 
-    // ===================== HÀM XEM (miễn phí) =====================
+    // ===================== CHỦ CỬA HÀNG =====================
 
-    function getCamera(uint256 id)
-        external view
-        returns (string memory serial, string memory name, uint256 pricePerDay, uint256 deposit, uint8 status)
-    {
-        MayAnh storage m = mayAnh[id];
-        require(m.tonTai, "Khong co may");
-        return (m.seri, m.ten, m.giaNgay, m.tienCoc, uint8(m.trangThai));
+    /// Xác nhận trả máy: kiểm tra seri, tự tính phí trễ, trừ hư hỏng, hoàn cọc
+    function confirmReturn(uint256 rentalId, string calldata serial, uint256 damageAmount) external chiChuCuaHang {
+        DonThue storage d = donThue[rentalId];
+        require(d.nguoiThue != address(0), "Khong co don");
+        require(d.trangThai == TrangThaiDon.DangThue, "Don khong o trang thai dang thue");
+        require(keccak256(bytes(serial)) == d.bamSeri, "Seri khong khop, sai may");
+
+        // Phí trễ: mỗi ngày trễ (làm tròn lên) = 1 ngày giá thuê, tối đa bằng tiền cọc
+        uint256 phiTre = 0;
+        if (block.timestamp > d.hanTra) {
+            uint256 soNgayTre = (block.timestamp - d.hanTra + 1 days - 1) / 1 days;
+            phiTre = soNgayTre * d.giaNgay;
+            if (phiTre > d.tienCoc) phiTre = d.tienCoc;
+        }
+        uint256 conLai = d.tienCoc - phiTre;
+        uint256 huHong = damageAmount > conLai ? conLai : damageAmount;
+        uint256 hoan = conLai - huHong;
+
+        // Cập nhật trạng thái trước khi chuyển tiền (chống reentrancy)
+        d.trangThai = TrangThaiDon.DaTra;
+        d.ngayTra = block.timestamp;
+        d.phiTre = phiTre;
+        d.tienHuHong = huHong;
+        d.tienHoan = hoan;
+        donHienTai[d.maMay] = 0;
+
+        _chuyen(owner, d.tienThue + phiTre + huHong);
+        _chuyen(d.nguoiThue, hoan);
+        emit Returned(rentalId, hoan, phiTre, huHong);
     }
 
-    function getCameraIdBySerial(string calldata serial) external view returns (uint256) {
-        return maTheoSeri[keccak256(bytes(serial))];
-    }
+    // ===================== XEM =====================
 
     function getRental(uint256 id) external view returns (DonThue memory) {
         require(donThue[id].nguoiThue != address(0), "Khong co don");
@@ -213,5 +174,22 @@ contract TKCam {
         if (soTien == 0) return;
         (bool ok, ) = payable(den).call{value: soTien}("");
         require(ok, "Chuyen tien that bai");
+    }
+
+    /// Lấy địa chỉ người ký từ chữ ký 65 byte (r, s, v)
+    function _nguoiKy(bytes32 tinNhan, bytes memory chuKy) private pure returns (address) {
+        if (chuKy.length != 65) return address(0);
+        bytes32 r;
+        bytes32 s;
+        uint8 v;
+        assembly {
+            r := mload(add(chuKy, 32))
+            s := mload(add(chuKy, 64))
+            v := byte(0, mload(add(chuKy, 96)))
+        }
+        if (v < 27) v += 27;
+        // Chặn chữ ký "dễ biến dạng" (s ở nửa trên)
+        if (uint256(s) > 0x7FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF5D576E7357A4501DDFE92F46681B20A0) return address(0);
+        return ecrecover(tinNhan, v, r, s);
     }
 }

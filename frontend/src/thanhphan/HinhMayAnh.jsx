@@ -1,11 +1,22 @@
-import { useId } from "react";
+import { useId, useState } from "react";
 
-// Hình minh họa máy ảnh compact vẽ bằng SVG, màu thân đổi theo từng máy
-export default function HinhMayAnh({ mau = "#2b2b2e", lon = false, nen = true }) {
+// Ảnh máy: có link ảnh thì hiện ảnh thật, không có (hoặc ảnh lỗi) thì vẽ hình minh họa SVG theo màu thân máy
+export default function HinhMayAnh({ mau = "#2b2b2e", anh = "", ten = "Máy ảnh compact", lon = false, nen = true }) {
   const idBong = useId();
+  const [anhLoi, setAnhLoi] = useState(false);
+  const lop = `hinh-may ${lon ? "hinh-may--lon" : ""} ${nen ? "" : "hinh-may--trong"}`;
+
+  if (anh && !anhLoi) {
+    return (
+      <div className={`${lop} hinh-may--anh`}>
+        <img src={anh} alt={ten} loading="lazy" onError={() => setAnhLoi(true)} />
+      </div>
+    );
+  }
+
   return (
-    <div className={`hinh-may ${lon ? "hinh-may--lon" : ""} ${nen ? "" : "hinh-may--trong"}`}>
-      <svg viewBox="0 0 200 130" role="img" aria-label="Máy ảnh compact">
+    <div className={lop}>
+      <svg viewBox="0 0 200 130" role="img" aria-label={ten}>
         <defs>
           <linearGradient id={idBong} x1="0" y1="0" x2="0" y2="1">
             <stop offset="0" stopColor="#ffffff" stopOpacity="0.22" />

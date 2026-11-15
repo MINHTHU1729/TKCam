@@ -1,4 +1,5 @@
-// Triển khai hợp đồng TKCam, đăng sẵn máy ảnh mẫu, rồi ghi địa chỉ + ABI sang frontend.
+// Triển khai hợp đồng TKCam, ký sẵn báo giá cho máy ảnh mẫu (ký miễn phí, không tốn gas),
+// rồi ghi địa chỉ + ABI sang frontend và API PHP.
 // Chạy:  npx hardhat run scripts/trienKhai.js --network localhost
 //   hoặc npx hardhat run scripts/trienKhai.js --network sepolia
 const fs = require("fs");
@@ -9,6 +10,7 @@ const THU_MUC_FRONTEND = path.join(__dirname, "..", "..", "frontend");
 const FILE_MAY_MAU = path.join(THU_MUC_FRONTEND, "src", "dulieu", "mayanh.json");
 const FILE_ABI = path.join(THU_MUC_FRONTEND, "src", "hopdong", "TKCam.json");
 const FILE_ENV = path.join(THU_MUC_FRONTEND, ".env");
+const FILE_BAO_GIA_MAU = path.join(__dirname, "..", "..", "api", "bao-gia-mau.json");
 
 const ngu = (ms) => new Promise((r) => setTimeout(r, ms));
 
@@ -31,20 +33,6 @@ async function choThayHopDong(diaChi) {
   throw new Error("Không thấy hợp đồng trên mạng sau 2 phút");
 }
 
-// Gửi giao dịch với gas ước lượng từ chính mạng đang dùng, cộng thêm 30% dự phòng.
-// Nếu ước lượng quá thấp (máy chủ RPC chưa thấy hợp đồng) thì chờ rồi ước lượng lại.
-async function guiGiaoDich(hamGoi, ...thamSo) {
-  let gas = 0n;
-  for (let lan = 0; lan < 10; lan++) {
-    gas = await hamGoi.estimateGas(...thamSo);
-    if (gas > 50000n) break;
-    await ngu(3000);
-  }
-  const bienNhan = await (await hamGoi(...thamSo, { gasLimit: (gas * 13n) / 10n })).wait();
-  if (bienNhan.status !== 1) throw new Error(`Giao dịch thất bại: ${bienNhan.hash}`);
-  return bienNhan;
-}
-
 async function main() {
   const { ethers, network } = hre;
   const [chuCuaHang] = await ethers.getSigners();
@@ -64,18 +52,22 @@ async function main() {
   }
   console.log(`✅ Đã triển khai TKCam tại: ${diaChi}`);
 
-  // 2. Đăng máy ảnh mẫu (mã máy trên hợp đồng = id trong mayanh.json)
+  // 2. Ký báo giá cho các máy mẫu (chữ ký của ví chủ, KHÔNG phải giao dịch nên không tốn gas).
+  //    API PHP đọc file này để gắn báo giá vào máy trong CSDL khi chạy lần đầu.
   const danhSach = JSON.parse(fs.readFileSync(FILE_MAY_MAU, "utf8")).sort((a, b) => a.id - b.id);
+  const hetHan = Math.floor(Date.now() / 1000) + 365 * 24 * 60 * 60; // báo giá dùng được 1 năm
+  const baoGia = [];
   for (const may of danhSach) {
-    const bn = await guiGiaoDich(
-      hopDong.listCamera,
-      may.seri,
-      may.ten,
-      ethers.parseEther(String(may.giaNgay)),
-      ethers.parseEther(String(may.coc))
-    );
-    if (may.trangThai === "bao-tri") await guiGiaoDich(hopDong.setMaintenance, may.id, true);
-    console.log(`   + Máy #${may.id} ${may.ten} (${may.seri}) – gas ${bn.gasUsed}`);
+    const giaNgay = ethers.parseEther(String(may.giaNgay));
+    const tienCoc = ethers.parseEther(String(may.coc));
+    const bam = await hopDong.bamBaoGia(may.id, may.seri, giaNgay, tienCoc, hetHan);
+    const chuKy = await chuCuaHang.signMessage(ethers.getBytes(bam));
+    baoGia.push({ id: may.id, seri: may.seri, giaNgayWei: giaNgay.toString(), tienCocWei: tienCoc.toString(), hetHan, chuKy });
+    console.log(`   ✍️  Ký báo giá máy #${may.id} ${may.ten}`);
+  }
+  if (fs.existsSync(path.dirname(FILE_BAO_GIA_MAU))) {
+    fs.writeFileSync(FILE_BAO_GIA_MAU, JSON.stringify({ hopDong: diaChi.toLowerCase(), chainId, baoGia }, null, 2));
+    console.log("📝 Đã ghi api/bao-gia-mau.json");
   }
 
   // 3. Mạng local: nạp sẵn ETH test cho ví của bạn (điền VI_NHAN_ETH trong blockchain/.env)
@@ -90,6 +82,19 @@ async function main() {
   ghiEnv("VITE_CONTRACT_ADDRESS", diaChi);
   ghiEnv("VITE_CHAIN_ID", chainId);
   ghiEnv("VITE_CHAIN_NAME", chainId === 31337 ? "Hardhat Local" : "Sepolia");
+  // Cổng đọc hợp đồng không cần ví: phải cùng mạng với hợp đồng vừa deploy
+  ghiEnv("VITE_RPC_URL", chainId === 31337 ? "http://127.0.0.1:8545" : process.env.SEPOLIA_RPC_URL || "https://ethereum-sepolia-rpc.publicnode.com");
+  // Ghi địa chỉ hợp đồng + RPC cho API PHP (api/cauhinh.php) để API đọc được giao dịch trên đúng hợp đồng
+  const fileCauHinhPhp = path.join(__dirname, "../../api/cauhinh.php");
+  if (fs.existsSync(fileCauHinhPhp)) {
+    const rpc = chainId === 31337 ? "http://127.0.0.1:8545" : process.env.SEPOLIA_RPC_URL || "https://ethereum-sepolia-rpc.publicnode.com";
+    const php = fs
+      .readFileSync(fileCauHinhPhp, "utf8")
+      .replace(/\$DIA_CHI_HOP_DONG\s*=\s*'[^']*';/, `$DIA_CHI_HOP_DONG = '${diaChi}';`)
+      .replace(/\$RPC_URL\s*=\s*'[^']*';/, `$RPC_URL = '${rpc}';`);
+    fs.writeFileSync(fileCauHinhPhp, php);
+    console.log("📝 Đã cập nhật api/cauhinh.php (nhớ chép lại thư mục api vào htdocs)");
+  }
   console.log("📝 Đã cập nhật frontend/src/hopdong/TKCam.json và frontend/.env");
   console.log("👉 Khởi động lại frontend (Ctrl + C rồi npm run dev) để nhận địa chỉ mới.");
 }

@@ -1,61 +1,12 @@
 {
   "contractName": "TKCam",
-  "address": "0x649e571631750725b89314C3B76be0c6dF9126d4",
+  "address": "0x96A819fF1F738943099aA1d64F466EE9f14F5BCd",
+  "chainId": 11155111,
   "abi": [
     {
       "inputs": [],
       "stateMutability": "nonpayable",
       "type": "constructor"
-    },
-    {
-      "anonymous": false,
-      "inputs": [
-        {
-          "indexed": true,
-          "internalType": "uint256",
-          "name": "id",
-          "type": "uint256"
-        },
-        {
-          "indexed": false,
-          "internalType": "string",
-          "name": "serial",
-          "type": "string"
-        },
-        {
-          "indexed": false,
-          "internalType": "uint256",
-          "name": "pricePerDay",
-          "type": "uint256"
-        },
-        {
-          "indexed": false,
-          "internalType": "uint256",
-          "name": "deposit",
-          "type": "uint256"
-        }
-      ],
-      "name": "CameraListed",
-      "type": "event"
-    },
-    {
-      "anonymous": false,
-      "inputs": [
-        {
-          "indexed": true,
-          "internalType": "uint256",
-          "name": "id",
-          "type": "uint256"
-        },
-        {
-          "indexed": false,
-          "internalType": "uint8",
-          "name": "status",
-          "type": "uint8"
-        }
-      ],
-      "name": "CameraStatusChanged",
-      "type": "event"
     },
     {
       "anonymous": false,
@@ -145,13 +96,39 @@
       "type": "event"
     },
     {
-      "inputs": [],
-      "name": "cameraCount",
-      "outputs": [
+      "inputs": [
         {
           "internalType": "uint256",
-          "name": "",
+          "name": "maMay",
           "type": "uint256"
+        },
+        {
+          "internalType": "string",
+          "name": "seri",
+          "type": "string"
+        },
+        {
+          "internalType": "uint256",
+          "name": "giaNgay",
+          "type": "uint256"
+        },
+        {
+          "internalType": "uint256",
+          "name": "tienCoc",
+          "type": "uint256"
+        },
+        {
+          "internalType": "uint256",
+          "name": "hetHan",
+          "type": "uint256"
+        }
+      ],
+      "name": "bamBaoGia",
+      "outputs": [
+        {
+          "internalType": "bytes32",
+          "name": "",
+          "type": "bytes32"
         }
       ],
       "stateMutability": "view",
@@ -220,64 +197,6 @@
           "type": "uint256"
         }
       ],
-      "name": "getCamera",
-      "outputs": [
-        {
-          "internalType": "string",
-          "name": "serial",
-          "type": "string"
-        },
-        {
-          "internalType": "string",
-          "name": "name",
-          "type": "string"
-        },
-        {
-          "internalType": "uint256",
-          "name": "pricePerDay",
-          "type": "uint256"
-        },
-        {
-          "internalType": "uint256",
-          "name": "deposit",
-          "type": "uint256"
-        },
-        {
-          "internalType": "uint8",
-          "name": "status",
-          "type": "uint8"
-        }
-      ],
-      "stateMutability": "view",
-      "type": "function"
-    },
-    {
-      "inputs": [
-        {
-          "internalType": "string",
-          "name": "serial",
-          "type": "string"
-        }
-      ],
-      "name": "getCameraIdBySerial",
-      "outputs": [
-        {
-          "internalType": "uint256",
-          "name": "",
-          "type": "uint256"
-        }
-      ],
-      "stateMutability": "view",
-      "type": "function"
-    },
-    {
-      "inputs": [
-        {
-          "internalType": "uint256",
-          "name": "id",
-          "type": "uint256"
-        }
-      ],
       "name": "getRental",
       "outputs": [
         {
@@ -295,6 +214,11 @@
             {
               "internalType": "uint256",
               "name": "soNgay",
+              "type": "uint256"
+            },
+            {
+              "internalType": "uint256",
+              "name": "giaNgay",
               "type": "uint256"
             },
             {
@@ -341,6 +265,11 @@
               "internalType": "enum TKCam.TrangThaiDon",
               "name": "trangThai",
               "type": "uint8"
+            },
+            {
+              "internalType": "bytes32",
+              "name": "bamSeri",
+              "type": "bytes32"
             }
           ],
           "internalType": "struct TKCam.DonThue",
@@ -392,35 +321,45 @@
     {
       "inputs": [
         {
-          "internalType": "string",
-          "name": "serial",
-          "type": "string"
+          "internalType": "uint256",
+          "name": "maMay",
+          "type": "uint256"
         },
         {
           "internalType": "string",
-          "name": "name",
+          "name": "seri",
           "type": "string"
         },
         {
           "internalType": "uint256",
-          "name": "pricePerDay",
+          "name": "giaNgay",
           "type": "uint256"
         },
         {
           "internalType": "uint256",
-          "name": "deposit",
+          "name": "tienCoc",
           "type": "uint256"
+        },
+        {
+          "internalType": "uint256",
+          "name": "hetHan",
+          "type": "uint256"
+        },
+        {
+          "internalType": "bytes",
+          "name": "chuKy",
+          "type": "bytes"
         }
       ],
-      "name": "listCamera",
+      "name": "kiemTraBaoGia",
       "outputs": [
         {
-          "internalType": "uint256",
-          "name": "id",
-          "type": "uint256"
+          "internalType": "bool",
+          "name": "",
+          "type": "bool"
         }
       ],
-      "stateMutability": "nonpayable",
+      "stateMutability": "view",
       "type": "function"
     },
     {
@@ -440,13 +379,38 @@
       "inputs": [
         {
           "internalType": "uint256",
-          "name": "cameraId",
+          "name": "maMay",
+          "type": "uint256"
+        },
+        {
+          "internalType": "string",
+          "name": "seri",
+          "type": "string"
+        },
+        {
+          "internalType": "uint256",
+          "name": "giaNgay",
           "type": "uint256"
         },
         {
           "internalType": "uint256",
-          "name": "days_",
+          "name": "tienCoc",
           "type": "uint256"
+        },
+        {
+          "internalType": "uint256",
+          "name": "hetHan",
+          "type": "uint256"
+        },
+        {
+          "internalType": "uint256",
+          "name": "soNgay",
+          "type": "uint256"
+        },
+        {
+          "internalType": "bytes",
+          "name": "chuKy",
+          "type": "bytes"
         }
       ],
       "name": "rent",
@@ -472,48 +436,6 @@
       ],
       "stateMutability": "view",
       "type": "function"
-    },
-    {
-      "inputs": [
-        {
-          "internalType": "uint256",
-          "name": "id",
-          "type": "uint256"
-        },
-        {
-          "internalType": "bool",
-          "name": "on",
-          "type": "bool"
-        }
-      ],
-      "name": "setMaintenance",
-      "outputs": [],
-      "stateMutability": "nonpayable",
-      "type": "function"
-    },
-    {
-      "inputs": [
-        {
-          "internalType": "uint256",
-          "name": "id",
-          "type": "uint256"
-        },
-        {
-          "internalType": "uint256",
-          "name": "pricePerDay",
-          "type": "uint256"
-        },
-        {
-          "internalType": "uint256",
-          "name": "deposit",
-          "type": "uint256"
-        }
-      ],
-      "name": "updatePrice",
-      "outputs": [],
-      "stateMutability": "nonpayable",
-      "type": "function"
     }
-  ],
-  "chainId": 11155111
+  ]
 }

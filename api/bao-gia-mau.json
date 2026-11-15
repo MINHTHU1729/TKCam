@@ -1,0 +1,54 @@
+{
+  "hopDong": "0x96a819ff1f738943099aa1d64f466ee9f14f5bcd",
+  "chainId": 11155111,
+  "baoGia": [
+    {
+      "id": 1,
+      "seri": "CN-IX285-0001",
+      "giaNgayWei": "100000000000000",
+      "tienCocWei": "1000000000000000",
+      "hetHan": 1826299406,
+      "chuKy": "0xf61926be37d0274299e5dfe3554a4a8b31ea0f85bc0b63463e613f5aebc725f003543f3a04ca5e23885dad5531c809652b71aadf62042aec8108d47fbc3d0c991b"
+    },
+    {
+      "id": 2,
+      "seri": "SN-W830-0002",
+      "giaNgayWei": "80000000000000",
+      "tienCocWei": "800000000000000",
+      "hetHan": 1826299406,
+      "chuKy": "0x6b88033eea6c082f3dd3b69eeb5f61e68ca45022b57946c6f97d056bb89d44197711ae8e9d2cfd2728100c07211f23319cc88623a69ee1c176b853c522971ef51b"
+    },
+    {
+      "id": 3,
+      "seri": "CN-G7X2-0003",
+      "giaNgayWei": "300000000000000",
+      "tienCocWei": "3000000000000000",
+      "hetHan": 1826299406,
+      "chuKy": "0x0880d000af7272f55b4d81226bc675905da1b35620fb26edd0d04e3ead4e126235bdc4065d6b0dd13e10ecb7c4da6e1f470628b6a87b8a24d4c1555a6d47e7221c"
+    },
+    {
+      "id": 4,
+      "seri": "FJ-XP140-0004",
+      "giaNgayWei": "120000000000000",
+      "tienCocWei": "1200000000000000",
+      "hetHan": 1826299406,
+      "chuKy": "0x1fda50dbe38190a5f04323ebab8efeb1451499874d479ed6c015a101bcf6e521571b4460f75a538ea236067f44d9b50a90b66c600511b2bf476112d3b3df389f1b"
+    },
+    {
+      "id": 5,
+      "seri": "RC-GR3-0005",
+      "giaNgayWei": "400000000000000",
+      "tienCocWei": "4000000000000000",
+      "hetHan": 1826299406,
+      "chuKy": "0x1a8161900f240f3246fb32307cd842a94f53417d9b409ac8a35331d8b1189c407b095d66617871a92fc76ee349341b3b5282daafb66674f18d9cfdd0eb58cb201c"
+    },
+    {
+      "id": 6,
+      "seri": "NK-A10-0006",
+      "giaNgayWei": "70000000000000",
+      "tienCocWei": "700000000000000",
+      "hetHan": 1826299406,
+      "chuKy": "0x41c1c25f16b99ce798157f9e7c1bec8d1eee5b916d5851a2b27e0d80ce86b6af7a8028d578533d45e68f89d055dd4604a97e6540c8c8a68965e73519d4945f681c"
+    }
+  ]
+}

@@ -1,5 +1,5 @@
-import { BrowserRouter, Routes, Route, useLocation } from "react-router-dom";
-import { TaiKhoanProvider } from "./xuly/TaiKhoan";
+import { BrowserRouter, Navigate, Routes, Route, useLocation } from "react-router-dom";
+import { TaiKhoanProvider, useTaiKhoan } from "./xuly/TaiKhoan";
 import DauTrang from "./thanhphan/DauTrang";
 import ChanTrang from "./thanhphan/ChanTrang";
 import CuonLenDau from "./thanhphan/CuonLenDau";
@@ -10,14 +10,22 @@ import ChiTietMay from "./trang/ChiTietMay";
 import TraCuuSeri from "./trang/TraCuuSeri";
 import DangNhap from "./trang/DangNhap";
 import DangKy from "./trang/DangKy";
+import QuenMatKhau from "./trang/QuenMatKhau";
 import TaiKhoanCuaToi from "./trang/TaiKhoanCuaToi";
 import KhongTimThay from "./trang/KhongTimThay";
+// Phần quản trị (Khang làm): trang/admin/*, CanLaAdmin, hopDongAdmin, dungAdmin
+import BoCucAdmin from "./trang/admin/BoCucAdmin";
+import CanLaAdmin from "./thanhphan/CanLaAdmin";
 import "./giaodien.css";
 
-// Trang đăng nhập / đăng ký có bố cục riêng, không hiện chân trang
-function BoCuc() {
+// Bố cục trang khách: menu trên + chân trang. Trang đăng nhập / đăng ký / quên mật khẩu không hiện chân trang.
+// Tài khoản quản trị không dùng trang khách: luôn được đưa về khu quản trị /admin.
+function BoCucKhach() {
   const { pathname } = useLocation();
-  const trangXacThuc = pathname === "/dang-nhap" || pathname === "/dang-ky";
+  const { laAdmin } = useTaiKhoan();
+  const trangXacThuc = ["/dang-nhap", "/dang-ky", "/quen-mat-khau"].includes(pathname);
+
+  if (laAdmin) return <Navigate to="/admin" replace />;
 
   return (
     <>
@@ -31,6 +39,7 @@ function BoCuc() {
           <Route path="/tra-cuu" element={<TraCuuSeri />} />
           <Route path="/dang-nhap" element={<DangNhap />} />
           <Route path="/dang-ky" element={<DangKy />} />
+          <Route path="/quen-mat-khau" element={<QuenMatKhau />} />
           <Route path="/tai-khoan" element={<CanDangNhap><TaiKhoanCuaToi /></CanDangNhap>} />
           <Route path="*" element={<KhongTimThay />} />
         </Routes>
@@ -44,7 +53,10 @@ export default function UngDung() {
   return (
     <BrowserRouter>
       <TaiKhoanProvider>
-        <BoCuc />
+        <Routes>
+          <Route path="/admin/*" element={<CanLaAdmin><BoCucAdmin /></CanLaAdmin>} />
+          <Route path="/*" element={<BoCucKhach />} />
+        </Routes>
       </TaiKhoanProvider>
     </BrowserRouter>
   );

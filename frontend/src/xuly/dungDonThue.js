@@ -1,24 +1,24 @@
 import { useCallback, useEffect, useState } from "react";
-import { layDonCuaVi, daCoHopDong, loiTiengViet } from "../tienich/hopDongThue";
+import { goiAPI } from "../tienich/api";
 
-// Hook: lấy danh sách đơn thuê của ví đang kết nối
-export function useDonThue(diaChi) {
+// Hook: đơn thuê của tài khoản đang đăng nhập (lấy từ CSDL qua API, kèm mã hash giao dịch)
+export function useDonThue(daDangNhap) {
   const [danhSach, setDanhSach] = useState([]);
   const [dangTai, setDangTai] = useState(false);
   const [loi, setLoi] = useState("");
 
   const taiLai = useCallback(async () => {
-    if (!diaChi || !daCoHopDong()) return;
+    if (!daDangNhap) return;
     setDangTai(true);
     setLoi("");
     try {
-      setDanhSach(await layDonCuaVi(diaChi));
+      setDanhSach(await goiAPI("/don-thue/cua-toi"));
     } catch (e) {
-      setLoi(loiTiengViet(e));
+      setLoi(e.message);
     } finally {
       setDangTai(false);
     }
-  }, [diaChi]);
+  }, [daDangNhap]);
 
   useEffect(() => {
     taiLai();

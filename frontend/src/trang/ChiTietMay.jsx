@@ -3,11 +3,13 @@ import { Link, useNavigate, useParams, useSearchParams } from "react-router-dom"
 import HinhMayAnh from "../thanhphan/HinhMayAnh";
 import BieuTuong from "../thanhphan/BieuTuong";
 import TheMayAnh from "../thanhphan/TheMayAnh";
+import MaGiaoDich from "../thanhphan/MaGiaoDich";
 import { useDanhSachMay } from "../xuly/dungMayAnh";
 import { useTaiKhoan } from "../xuly/TaiKhoan";
 import { useVi } from "../xuly/dungVi";
 import { dinhDangEth, TRANG_THAI } from "../tienich/dinhdang";
-import { daCoHopDong, layMayTrenChuoi, loiTiengViet, thueMay } from "../tienich/hopDongThue";
+import { daCoHopDong, layDonHienTai, loiTiengViet, thueMay } from "../tienich/hopDongThue";
+import { ghiNhanGiaoDich } from "../tienich/api";
 
 export default function ChiTietMay() {
   const { id } = useParams();
@@ -19,16 +21,16 @@ export default function ChiTietMay() {
   const [soNgay, setSoNgay] = useState(() => Math.min(30, Math.max(1, Number(thamSo.get("ngay")) || 1)));
   const [dangThue, setDangThue] = useState(false);
   const [loi, setLoi] = useState("");
-  const [ketQua, setKetQua] = useState(null); // { maDon, maGiaoDich }
+  const [ketQua, setKetQua] = useState(null); // { maDon, maGiaoDich, daLuu }
   const [trangThaiChuoi, setTrangThaiChuoi] = useState(null); // trạng thái thật trên hợp đồng
 
-  // Đọc trạng thái thật của máy trên hợp đồng (nếu đã kết nối ví đúng mạng)
+  // Hỏi hợp đồng xem máy có đang được thuê không (đọc miễn phí, chính xác hơn CSDL)
   useEffect(() => {
     if (!daCoHopDong()) return;
-    layMayTrenChuoi(Number(id))
-      .then((m) => setTrangThaiChuoi(m.trangThai))
+    layDonHienTai(Number(id))
+      .then((maDon) => setTrangThaiChuoi(maDon > 0 ? "dang-thue" : null))
       .catch(() => setTrangThaiChuoi(null));
-  }, [id, daKetNoi, saiMang, ketQua]);
+  }, [id, ketQua]);
 
   if (dangTai) return <div className="khung khoi"><div className="trong">Đang tải...</div></div>;
 
@@ -44,7 +46,7 @@ export default function ChiTietMay() {
     );
   }
 
-  // Ưu tiên trạng thái trên hợp đồng, nếu chưa đọc được thì dùng dữ liệu mẫu
+  // Máy đang thuê trên hợp đồng thì ưu tiên, còn lại theo CSDL (bảo trì / chưa có báo giá / sẵn sàng)
   const trangThai = trangThaiChuoi || may.trangThai;
   const tt = TRANG_THAI[trangThai];
   const sanSang = trangThai === "san-sang";
@@ -82,7 +84,15 @@ export default function ChiTietMay() {
     }
     setDangThue(true);
     try {
-      setKetQua(await thueMay(may.id, soNgay));
+      const kq = await thueMay(may, soNgay); // trả tiền thuê + cọc vào hợp đồng (theo báo giá đã ký)
+      // Gửi mã hash về máy chủ để kiểm tra trên blockchain và lưu đơn vào CSDL
+      let daLuu = true;
+      try {
+        await ghiNhanGiaoDich(kq.maGiaoDich, "thue", { maDon: kq.maDon });
+      } catch {
+        daLuu = false;
+      }
+      setKetQua({ ...kq, daLuu });
       lamMoi(); // cập nhật số dư ví
     } catch (e) {
       setLoi(loiTiengViet(e));
@@ -111,7 +121,7 @@ export default function ChiTietMay() {
 
       <div className="chi-tiet-may">
         <div className="chi-tiet-may__anh">
-          <HinhMayAnh mau={may.mau} lon />
+          <HinhMayAnh mau={may.mau} anh={may.anh} ten={may.ten} lon />
           <div className="chi-tiet-may__cam-ket">
             <span><BieuTuong ten="khien" co={18} /> Máy kiểm tra trước khi giao</span>
             <span><BieuTuong ten="hoanTien" co={18} /> Hoàn cọc ngay khi trả máy</span>
@@ -151,7 +161,8 @@ export default function ChiTietMay() {
                 <div>
                   <b>Thuê thành công! Mã đơn #{ketQua.maDon}</b>
                   <p>Tiền cọc {dinhDangEth(may.coc)} được giữ an toàn và hoàn về ví ngay khi bạn trả máy.</p>
-                  <code title={ketQua.maGiaoDich}>Mã thanh toán: {ketQua.maGiaoDich.slice(0, 10)}...{ketQua.maGiaoDich.slice(-6)}</code>
+                  <MaGiaoDich nhan="Mã giao dịch:" hash={ketQua.maGiaoDich} />
+                  {!ketQua.daLuu && <p className="mo nho">Đơn đã ghi trên blockchain; hệ thống sẽ tự cập nhật vào tài khoản sau ít phút.</p>}
                 </div>
                 <Link to="/tai-khoan#don-thue" className="nut nut-toi nut-day">Xem đơn thuê của tôi</Link>
               </div>
