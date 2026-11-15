@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
-import { coMetaMask, ketNoiVi, laySoDu, layMaMang } from "../tienich/ketnoivi";
+import { coMetaMask, ketNoiVi, laySoDu, layMaMang, layMetaMask } from "../tienich/ketnoivi";
 import { MA_MANG } from "../tienich/cauhinh";
 
 export function useVi() {
@@ -36,7 +36,11 @@ export function useVi() {
       setDiaChi(dc);
       await lamMoi(dc);
     } catch (e) {
-      setLoi(e.code === 4001 ? "Bạn đã từ chối kết nối ví." : e.message);
+      const ma = e?.code ?? e?.error?.code ?? e?.info?.error?.code;
+      if (ma === 4001 || e?.code === "ACTION_REJECTED") setLoi("Bạn đã từ chối kết nối ví.");
+      else if (ma === -32002) setLoi("MetaMask đang chờ bạn xác nhận: bấm biểu tượng con cáo 🦊 trên thanh Chrome.");
+      else setLoi(e?.shortMessage || e?.message || "Không kết nối được ví.");
+      console.error(e);
     } finally {
       setDangTai(false);
     }
@@ -45,7 +49,7 @@ export function useVi() {
   // Chuyển MetaMask sang đúng mạng trong .env
   const doiMang = async () => {
     try {
-      await window.ethereum.request({
+      await layMetaMask().request({
         method: "wallet_switchEthereumChain",
         params: [{ chainId: "0x" + MA_MANG.toString(16) }],
       });
@@ -58,7 +62,8 @@ export function useVi() {
   useEffect(() => {
     if (!coMetaMask()) return;
 
-    window.ethereum.request({ method: "eth_accounts" }).then((danhSach) => {
+    const vi = layMetaMask();
+    vi.request({ method: "eth_accounts" }).then((danhSach) => {
       if (danhSach[0]) {
         setDiaChi(danhSach[0]);
         lamMoi(danhSach[0]);
@@ -73,11 +78,11 @@ export function useVi() {
     };
     const khiDoiMang = () => window.location.reload();
 
-    window.ethereum.on("accountsChanged", khiDoiVi);
-    window.ethereum.on("chainChanged", khiDoiMang);
+    vi.on("accountsChanged", khiDoiVi);
+    vi.on("chainChanged", khiDoiMang);
     return () => {
-      window.ethereum.removeListener("accountsChanged", khiDoiVi);
-      window.ethereum.removeListener("chainChanged", khiDoiMang);
+      vi.removeListener("accountsChanged", khiDoiVi);
+      vi.removeListener("chainChanged", khiDoiMang);
     };
   }, [lamMoi]);
 

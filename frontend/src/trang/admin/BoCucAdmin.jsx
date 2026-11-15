@@ -13,6 +13,7 @@ import SuaMay from "./SuaMay";
 import QuanLyDon from "./QuanLyDon";
 import KhachThue from "./KhachThue";
 import GiaoDich from "./GiaoDich";
+import "./admin.css";
 
 // Menu bên trái của khu quản trị
 const MENU = [
@@ -122,9 +123,12 @@ function ChipVi() {
 
   if (!vi.daKetNoi) {
     return (
-      <button className="ad__vi ad__vi--vang" onClick={vi.ketNoi} disabled={vi.dangTai} title="Cần ví chủ để thực hiện thao tác">
-        <BieuTuong ten="vi" co={16} /> {vi.dangTai ? "Đang kết nối..." : "Kết nối ví chủ"}
-      </button>
+      <>
+        {vi.loi && <span className="ad__vi ad__vi--do">{vi.loi}</span>}
+        <button className="ad__vi ad__vi--vang" onClick={vi.ketNoi} disabled={vi.dangTai} title="Cần ví chủ để thực hiện thao tác">
+          <BieuTuong ten="vi" co={16} /> {vi.dangTai ? "Đang kết nối..." : "Kết nối ví chủ"}
+        </button>
+      </>
     );
   }
   if (vi.saiMang) {

@@ -13,12 +13,11 @@ import DangKy from "./trang/DangKy";
 import QuenMatKhau from "./trang/QuenMatKhau";
 import TaiKhoanCuaToi from "./trang/TaiKhoanCuaToi";
 import KhongTimThay from "./trang/KhongTimThay";
-// Phần quản trị (Khang làm): trang/admin/*, CanLaAdmin, hopDongAdmin, dungAdmin
 import BoCucAdmin from "./trang/admin/BoCucAdmin";
 import CanLaAdmin from "./thanhphan/CanLaAdmin";
 import "./giaodien.css";
 
-// Bố cục trang khách: menu trên + chân trang. Trang đăng nhập / đăng ký / quên mật khẩu không hiện chân trang.
+// Bố cục trang khách: menu trên + chân trang. Trang đăng nhập / đăng ký không hiện chân trang.
 // Tài khoản quản trị không dùng trang khách: luôn được đưa về khu quản trị /admin.
 function BoCucKhach() {
   const { pathname } = useLocation();
